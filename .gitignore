@@ -1,0 +1,10 @@
+/playlistlist.txt
+!/playlistlist-example.txt
+
+!/bin/
+/bin/*
+!/bin/install-win.sh
+
+!/dl/
+/dl/*
+!/dl/.gitkeep
