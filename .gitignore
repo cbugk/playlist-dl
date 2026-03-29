@@ -8,3 +8,5 @@
 !/dl/
 /dl/*
 !/dl/.gitkeep
+
+.DS_Store

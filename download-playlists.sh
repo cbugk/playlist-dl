@@ -2,17 +2,52 @@
 # Tested on: GitBash
 
 cd "$(dirname "${0}")"
-./bin/install-win.sh  # idempotent, does nothing if binaries are present
+
+# Environment and Executables
+YT_DLP=( '/usr/bin/env' 'yt-dlp' )
+OPT_IMPERSONATE_TARGET=()
+OPT_WINDOWS_FILENAMES=()
+OPT_FFMPEG=()
+if [[ "${OSTYPE}" =~ ^msys ]]; then
+	# idempotent, does nothing if binaries are present
+	./bin/install-win.sh && {
+		YT_DLP=( './bin/yt-dlp' )
+		OPT_IMPERSONATE_TARGET=( '--impersonate' 'chrome:windows' )
+		OPT_WINDOWS_FILENAMES=( '--windows-filenames' )
+		OPT_FFMPEG=('--ffmpeg-location' './bin/')
+	} || {
+		echo "Please run and inspect: 'bash ./bin/install-win.sh'"
+		exit 1
+	}
+elif [[ "${OSTYPE}" =~ ^darwin ]]; then
+	{
+		brew install yt-dlp ffmpeg curl cffi && which yt-dlp && which ffmpeg && which curl
+	} 1>/dev/null 2>&1 || {
+		echo "Please run and inspect 'brew install yt-dlp fmmpeg curl cffi'"
+		exit 2
+	}
+else
+	{
+		which yt-dlp && which ffmpeg
+	} || {
+		echo "Please first ensure yt-dlp and ffmpeg are installed."
+		exit 3
+	}
+fi
 
 # Each line should contain a playlist URI
 while read PL_URI; do
-	[ -z "${PL_URI}" ] && continue;
+	# Ignore empty lines and comments (# must be first char)
+	{ [ -z "${PL_URI}" ] || [[ "${PL_URI}" =~ ^# ]]	} && continue;
 	echo "Playlist: ${PL_URI}"
-	PL_VAR_FILE="./plname.txt"
+	PL_VAR_FILE="./dl/plname.txt"
+
+	# List impersonate targets for debugging
+	${YT_DLP[@]} --list-impersonate-targets
 
 	# Update download directory file name variable stored in file
 	rm -f "${PL_VAR_FILE}"
-	./bin/yt-dlp \
+	${YT_DLP[@]} \
 		--update \
 		--simulate \
 		--no-playlist \
@@ -32,7 +67,7 @@ while read PL_URI; do
 
 	# Download into directory with archive file
 	# Options listed at: https://github.com/yt-dlp/yt-dlp?tab=readme-ov-file
-	./bin/yt-dlp \
+	${YT_DLP[@]} \
 		--no-update \
 		--no-playlist \
 		--no-lazy-playlist \
@@ -47,11 +82,11 @@ while read PL_URI; do
 		--convert-thumbnails png \
 		--progress \
 		--console-title \
-		--impersonate chrome:windows \
+		${OPT_IMPERSONATE_TARGET[@]} \
 		--retries 2 \
-		--windows-filenames \
+		${OPT_WINDOWS_FILENAMES[@]} \
 		--part \
-		--ffmpeg-location ./bin/ \
+		${OPT_FFMPEG[@]} \
 		--extract-audio \
 		--audio-format mp3 \
 		--audio-quality best \
