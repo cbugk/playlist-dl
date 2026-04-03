@@ -4,6 +4,7 @@
 !/bin/
 /bin/*
 !/bin/install-win.sh
+!/bin/update-indices.sh
 
 !/dl/
 /dl/*
